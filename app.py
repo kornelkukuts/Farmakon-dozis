@@ -46,11 +46,9 @@ spect_dict = {
     "Tektrotyd": {"c": 0.0160, "s": "ICRP Publ. 80 / 128 (Somatostatin)"},
 }
 
-# Modalitás választó KÍVÜL van az űrlapon, így azonnal frissíti a listát
 st.subheader("Vizsgálati mód kiválasztása")
 modality = st.radio("Modalitás:", ["SPECT / Theranostic", "PET"], horizontal=True)
 
-# A választott modalitás alapján beállítjuk a megfelelő szótárat
 current_dict = pet_dict if modality == "PET" else spect_dict
 
 with st.form("dose_form"):
@@ -94,7 +92,14 @@ if submitted:
         if not taj_clean:
             taj_clean = "Ismeretlen"
 
-        filename = f"taj_{taj_clean}_dozis_naplo.csv"
+        # Letöltések mappa útvonalának automatikus meghatározása Windows / Linux / macOS rendszereken
+        downloads_path = os.path.join(os.path.expanduser("~"), "Downloads")
+        if not os.path.exists(downloads_path):
+            downloads_path = os.path.expanduser(
+                "~"
+            )  # Biztonsági fallback a home mappára
+
+        filename = os.path.join(downloads_path, f"taj_{taj_clean}_dozis_naplo.csv")
         file_exists = os.path.exists(filename)
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -109,8 +114,8 @@ if submitted:
                     f"{str(activity).replace('.', ',')};{str(round(dose, 2)).replace('.', ',')};"
                     f"{str(item['c']).replace('.', ',')};{item['s']}\n"
                 )
-            st.toast(
-                f"Sikeresen rögzítve a(z) {filename} fájlba!", icon="📥"
+            st.success(
+                f"Sikeresen rögzítve a Letöltések mappába:\n`{filename}`"
             )
         except Exception as e:
             st.error(f"Nem sikerült menteni a fájlt: {e}")
