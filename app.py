@@ -52,7 +52,7 @@ current_dict = pet_dict if modality == "PET" else spect_dict
 
 with st.form("dose_form"):
     st.subheader("Vizsgálati adatok megadása")
-    taj = st.text_input("Beteg TAJ száma (Kötelező):")
+    taj = st.text_input("Beteg TAJ száma (opcionális a mentéshez):")
 
     pharmaceutical = st.selectbox(
         "Radiofarmakon:", sorted(current_dict.keys())
@@ -65,23 +65,20 @@ with st.form("dose_form"):
     submitted = st.form_submit_button("Effektív Dózis Számítása")
 
 if submitted:
-    # Ellenőrizzük, hogy ki van-e töltve a TAJ szám
-    taj_trimmed = taj.strip()
-    if not taj_trimmed:
-        st.error(
-            "Hiba: A beteg TAJ számának megadása kötelező a számításhoz és a mentéshez!"
-        )
-    elif activity <= 0:
+    if activity <= 0:
         st.error("Kérjük, adj meg érvényes, pozitív aktivitást!")
     else:
         item = current_dict[pharmaceutical]
         dose = activity * item["c"]
 
+        taj_trimmed = taj.strip()
+        taj_display = taj_trimmed if taj_trimmed else "Nincs megadva"
+
         st.success(f"### Effektív dózis teljes testre: {dose:.2f} mSv")
 
         st.info(
             f"**Számítás részletei:**\n\n"
-            f"- **TAJ:** {taj_trimmed}\n"
+            f"- **TAJ:** {taj_display}\n"
             f"- **Modalitás:** {modality}\n"
             f"- **Farmakon:** {pharmaceutical}\n"
             f"- **Beadott aktivitás:** {activity:.1f} MBq\n"
@@ -89,25 +86,30 @@ if submitted:
             f"- **Alkalmazott együttható:** {item['c']} mSv/MBq"
         )
 
-        taj_clean = "".join(
-            c for c in taj_trimmed if c.isalnum() or c in ("-", "_")
-        )
-        if not taj_clean:
-            taj_clean = "Ismeretlen"
+        # Mentési opció csak akkor jelenik meg, ha van megadott TAJ szám
+        if taj_trimmed:
+            taj_clean = "".join(
+                c for c in taj_trimmed if c.isalnum() or c in ("-", "_")
+            )
+            if not taj_clean:
+                taj_clean = "Ismeretlen"
 
-        filename = f"taj_{taj_clean}_dozis_naplo.csv"
-        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            filename = f"taj_{taj_clean}_dozis_naplo.csv"
+            timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        # CSV tartalom összeállítása a memóriában
-        csv_header = "Datum;TAJ;Modalitas;Farmakon;Beadott_Aktivitas_MBq;Effektiv_Dozis_mSv;ICRP_Egyutthato;Szabvany_Forras\n"
-        csv_row = f"{timestamp};{taj_trimmed};{modality};{pharmaceutical};{str(activity).replace('.', ',')};{str(round(dose, 2)).replace('.', ',')};{str(item['c']).replace('.', ',')};{item['s']}\n"
-        csv_data = csv_header + csv_row
+            csv_header = "Datum;TAJ;Modalitas;Farmakon;Beadott_Aktivitas_MBq;Effektiv_Dozis_mSv;ICRP_Egyutthato;Szabvany_Forras\n"
+            csv_row = f"{timestamp};{taj_trimmed};{modality};{pharmaceutical};{str(activity).replace('.', ',')};{str(round(dose, 2)).replace('.', ',')};{str(item['c']).replace('.', ',')};{item['s']}\n"
+            csv_data = csv_header + csv_row
 
-        st.markdown("---")
-        st.subheader("Fájl mentése")
-        st.download_button(
-            label="📥 CSV Fájl Letöltése / Mentése másként",
-            data=csv_data.encode("utf-8-sig"),
-            file_name=filename,
-            mime="text/csv",
-        )
+            st.markdown("---")
+            st.subheader("Fájl mentése")
+            st.download_button(
+                label="📥 CSV Fájl Letöltése / Mentése másként",
+                data=csv_data.encode("utf-8-sig"),
+                file_name=filename,
+                mime="text/csv",
+            )
+        else:
+            st.warning(
+                "💡 *Megjegyzés: Mivel nem adtál meg TAJ számot, a mentési opció nem jelenik meg, de a számítást sikeresen elvégeztük.*"
+            )
