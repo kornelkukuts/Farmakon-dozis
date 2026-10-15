@@ -1,4 +1,3 @@
-# -*- coding: cp1252 -*-
 import datetime
 import os
 import streamlit as st
@@ -9,7 +8,7 @@ st.set_page_config(
 
 st.title("Nukleáris Medicina - Effektív Dózis Teljes Testre")
 st.markdown(
-    "Beteg-specifikus dózisbecslés ICRP szabványok (Publ. 80, 106, 128) alapján."
+    "Beteg-specifikus dózisbecslés ICRP szabványok (Publ. 80, 106, 128) alapján[cite: 1]."
 )
 
 # Adatbázisok a forráskód alapján[cite: 1]
@@ -47,7 +46,6 @@ spect_dict = {
     "Tektrotyd": {"c": 0.0160, "s": "ICRP Publ. 80 / 128 (Somatostatin)"},
 }
 
-# Felhasználói felület elemek
 with st.form("dose_form"):
     st.subheader("Vizsgálati adatok megadása")
     taj = st.text_input("Beteg TAJ száma[cite: 1]:")
@@ -78,7 +76,6 @@ if submitted:
         item = current_dict[pharmaceutical]
         dose = activity * item["c"]
 
-        # Eredmény megjelenítése
         st.success(f"### Effektív dózis teljes testre: {dose:.2f} mSv[cite: 1]")
 
         st.info(
@@ -91,7 +88,6 @@ if submitted:
             f"- **Alkalmazott együttható:** {item['c']} mSv/MBq[cite: 1]"
         )
 
-        # CSV Mentés logikai felépítése
         taj_clean = (
             "".join(c for c in taj if c.isalnum() or c in ("-", "_"))
             if taj
@@ -105,7 +101,8 @@ if submitted:
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         try:
-            with open(filename, mode="a", encoding="cp1252", newline="") as f:
+            # UTF-8 kódolás használata a hibák elkerülése érdekében
+            with open(filename, mode="a", encoding="utf-8", newline="") as f:
                 if not file_exists:
                     f.write(
                         "Datum;TAJ;Modalitas;Farmakon;Beadott_Aktivitas_MBq;Effektiv_Dozis_mSv;ICRP_Egyutthato;Szabvany_Forras\n"
