@@ -1,2 +1,2 @@
-# Farmakon-d-zis
+# Farmakon-dozis
 Különböző farmakonok effektív dózisa
