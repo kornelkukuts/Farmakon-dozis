@@ -46,15 +46,16 @@ spect_dict = {
     "Tektrotyd": {"c": 0.0160, "s": "ICRP Publ. 80 / 128 (Somatostatin)"},
 }
 
+# Modalitás választó KÍVÜL van az űrlapon, így azonnal frissíti a listát
+st.subheader("Vizsgálati mód kiválasztása")
+modality = st.radio("Modalitás:", ["SPECT / Theranostic", "PET"], horizontal=True)
+
+# A választott modalitás alapján beállítjuk a megfelelő szótárat
+current_dict = pet_dict if modality == "PET" else spect_dict
+
 with st.form("dose_form"):
     st.subheader("Vizsgálati adatok megadása")
     taj = st.text_input("Beteg TAJ száma:")
-
-    # Modalitás választó kulcskezeléssel, hogy azonnal frissítse a listát
-    modality = st.radio("Modalitás:", ["SPECT / Theranostic", "PET"], key="mod")
-
-    # A választott modalitás alapján dinamikusan váltjuk a szótárat
-    current_dict = pet_dict if modality == "PET" else spect_dict
 
     pharmaceutical = st.selectbox(
         "Radiofarmakon:", sorted(current_dict.keys())
