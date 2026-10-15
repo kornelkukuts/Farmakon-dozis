@@ -1,5 +1,4 @@
 import datetime
-import os
 import streamlit as st
 
 st.set_page_config(
@@ -53,7 +52,7 @@ current_dict = pet_dict if modality == "PET" else spect_dict
 
 with st.form("dose_form"):
     st.subheader("Vizsgálati adatok megadása")
-    taj = st.text_input("Beteg TAJ száma:")
+    taj = st.text_input("Beteg TAJ száma (Kötelező):")
 
     pharmaceutical = st.selectbox(
         "Radiofarmakon:", sorted(current_dict.keys())
@@ -63,10 +62,16 @@ with st.form("dose_form"):
         "Beadott aktivitás (MBq):", min_value=0.1, value=740.0, step=10.0
     )
 
-    submitted = st.form_submit_button("Effektív Dózis Számítása és Mentése")
+    submitted = st.form_submit_button("Effektív Dózis Számítása")
 
 if submitted:
-    if activity <= 0:
+    # Ellenőrizzük, hogy ki van-e töltve a TAJ szám
+    taj_trimmed = taj.strip()
+    if not taj_trimmed:
+        st.error(
+            "Hiba: A beteg TAJ számának megadása kötelező a számításhoz és a mentéshez!"
+        )
+    elif activity <= 0:
         st.error("Kérjük, adj meg érvényes, pozitív aktivitást!")
     else:
         item = current_dict[pharmaceutical]
@@ -76,7 +81,7 @@ if submitted:
 
         st.info(
             f"**Számítás részletei:**\n\n"
-            f"- **TAJ:** {taj if taj else 'Nincs megadva'}\n"
+            f"- **TAJ:** {taj_trimmed}\n"
             f"- **Modalitás:** {modality}\n"
             f"- **Farmakon:** {pharmaceutical}\n"
             f"- **Beadott aktivitás:** {activity:.1f} MBq\n"
@@ -84,38 +89,25 @@ if submitted:
             f"- **Alkalmazott együttható:** {item['c']} mSv/MBq"
         )
 
-        taj_clean = (
-            "".join(c for c in taj if c.isalnum() or c in ("-", "_"))
-            if taj
-            else "Ismeretlen"
+        taj_clean = "".join(
+            c for c in taj_trimmed if c.isalnum() or c in ("-", "_")
         )
         if not taj_clean:
             taj_clean = "Ismeretlen"
 
-        # Letöltések mappa útvonalának automatikus meghatározása Windows / Linux / macOS rendszereken
-        downloads_path = os.path.join(os.path.expanduser("~"), "Downloads")
-        if not os.path.exists(downloads_path):
-            downloads_path = os.path.expanduser(
-                "~"
-            )  # Biztonsági fallback a home mappára
-
-        filename = os.path.join(downloads_path, f"taj_{taj_clean}_dozis_naplo.csv")
-        file_exists = os.path.exists(filename)
+        filename = f"taj_{taj_clean}_dozis_naplo.csv"
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        try:
-            with open(filename, mode="a", encoding="utf-8", newline="") as f:
-                if not file_exists:
-                    f.write(
-                        "Datum;TAJ;Modalitas;Farmakon;Beadott_Aktivitas_MBq;Effektiv_Dozis_mSv;ICRP_Egyutthato;Szabvany_Forras\n"
-                    )
-                f.write(
-                    f"{timestamp};{taj if taj else 'Ismeretlen'};{modality};{pharmaceutical};"
-                    f"{str(activity).replace('.', ',')};{str(round(dose, 2)).replace('.', ',')};"
-                    f"{str(item['c']).replace('.', ',')};{item['s']}\n"
-                )
-            st.success(
-                f"Sikeresen rögzítve a Letöltések mappába:\n`{filename}`"
-            )
-        except Exception as e:
-            st.error(f"Nem sikerült menteni a fájlt: {e}")
+        # CSV tartalom összeállítása a memóriában
+        csv_header = "Datum;TAJ;Modalitas;Farmakon;Beadott_Aktivitas_MBq;Effektiv_Dozis_mSv;ICRP_Egyutthato;Szabvany_Forras\n"
+        csv_row = f"{timestamp};{taj_trimmed};{modality};{pharmaceutical};{str(activity).replace('.', ',')};{str(round(dose, 2)).replace('.', ',')};{str(item['c']).replace('.', ',')};{item['s']}\n"
+        csv_data = csv_header + csv_row
+
+        st.markdown("---")
+        st.subheader("Fájl mentése")
+        st.download_button(
+            label="📥 CSV Fájl Letöltése / Mentése másként",
+            data=csv_data.encode("utf-8-sig"),
+            file_name=filename,
+            mime="text/csv",
+        )
