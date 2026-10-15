@@ -8,10 +8,10 @@ st.set_page_config(
 
 st.title("Nukleáris Medicina - Effektív Dózis Teljes Testre")
 st.markdown(
-    "Beteg-specifikus dózisbecslés ICRP szabványok (Publ. 80, 106, 128) alapján[cite: 1]."
+    "Beteg-specifikus dózisbecslés ICRP szabványok (Publ. 80, 106, 128) alapján."
 )
 
-# Adatbázisok a forráskód alapján[cite: 1]
+# Adatbázisok
 pet_dict = {
     "C-11 metionin": {"c": 0.0055, "s": "ICRP Publ. 128 (Amino acid)"},
     "F-18 FDG": {"c": 0.0190, "s": "ICRP Publ. 106 / 128 (Glucose)"},
@@ -48,26 +48,23 @@ spect_dict = {
 
 with st.form("dose_form"):
     st.subheader("Vizsgálati adatok megadása")
-    taj = st.text_input("Beteg TAJ száma[cite: 1]:")
-    modality = st.radio(
-        "Modalitás[cite: 1]:", ["SPECT / Theranostic", "PET"]
-    )
+    taj = st.text_input("Beteg TAJ száma:")
 
+    # Modalitás választó kulcskezeléssel, hogy azonnal frissítse a listát
+    modality = st.radio("Modalitás:", ["SPECT / Theranostic", "PET"], key="mod")
+
+    # A választott modalitás alapján dinamikusan váltjuk a szótárat
     current_dict = pet_dict if modality == "PET" else spect_dict
+
     pharmaceutical = st.selectbox(
-        "Radiofarmakon[cite: 1]:", sorted(current_dict.keys())
+        "Radiofarmakon:", sorted(current_dict.keys())
     )
 
     activity = st.number_input(
-        "Beadott aktivitás (MBq)[cite: 1]:",
-        min_value=0.1,
-        value=740.0,
-        step=10.0,
+        "Beadott aktivitás (MBq):", min_value=0.1, value=740.0, step=10.0
     )
 
-    submitted = st.form_submit_button(
-        "Effektív Dózis Számítása és Mentése[cite: 1]"
-    )
+    submitted = st.form_submit_button("Effektív Dózis Számítása és Mentése")
 
 if submitted:
     if activity <= 0:
@@ -76,16 +73,16 @@ if submitted:
         item = current_dict[pharmaceutical]
         dose = activity * item["c"]
 
-        st.success(f"### Effektív dózis teljes testre: {dose:.2f} mSv[cite: 1]")
+        st.success(f"### Effektív dózis teljes testre: {dose:.2f} mSv")
 
         st.info(
-            f"**Számítás részletei[cite: 1]:**\n\n"
-            f"- **TAJ:** {taj if taj else 'Nincs megadva'}[cite: 1]\n"
-            f"- **Modalitás:** {modality}[cite: 1]\n"
-            f"- **Farmakon:** {pharmaceutical}[cite: 1]\n"
-            f"- **Beadott aktivitás:** {activity:.1f} MBq[cite: 1]\n"
-            f"- **Szabvány / Forrás:** {item['s']}[cite: 1]\n"
-            f"- **Alkalmazott együttható:** {item['c']} mSv/MBq[cite: 1]"
+            f"**Számítás részletei:**\n\n"
+            f"- **TAJ:** {taj if taj else 'Nincs megadva'}\n"
+            f"- **Modalitás:** {modality}\n"
+            f"- **Farmakon:** {pharmaceutical}\n"
+            f"- **Beadott aktivitás:** {activity:.1f} MBq\n"
+            f"- **Szabvány / Forrás:** {item['s']}\n"
+            f"- **Alkalmazott együttható:** {item['c']} mSv/MBq"
         )
 
         taj_clean = (
@@ -101,7 +98,6 @@ if submitted:
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         try:
-            # UTF-8 kódolás használata a hibák elkerülése érdekében
             with open(filename, mode="a", encoding="utf-8", newline="") as f:
                 if not file_exists:
                     f.write(
